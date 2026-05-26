@@ -108,8 +108,23 @@ public abstract class EntityMixin implements EntityMovementExtension {
 
     @Redirect(method = "move(Lnet/minecraft/world/entity/MoverType;Lnet/minecraft/world/phys/Vec3;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"))
     public Vec3 sable$collideRedirect(final Entity entity, final Vec3 collisionMotion) {
+        final double MAX_MOTION = 10.0;
+        final Vec3 clampedMotion = (Math.abs(collisionMotion.x) > MAX_MOTION ||
+                Math.abs(collisionMotion.y) > MAX_MOTION ||
+                Math.abs(collisionMotion.z) > MAX_MOTION)
+                ? Vec3.ZERO
+                : collisionMotion;
+
+        if (entity.isRemoved()
+                || (entity instanceof LivingEntity living && living.isDeadOrDying())) {
+            this.sable$collisionInfo = new SubLevelEntityCollision.CollisionInfo();
+            this.sable$collisionInfo.motion = clampedMotion;
+            this.sable$trackingSubLevel = null;
+            return this.collide(clampedMotion);
+        }
+
         final Entity self = (Entity) (Object) this;
-        final Vec3 motion = collisionMotion;
+        final Vec3 motion = clampedMotion;
 
         Vec3 velocity = Vec3.ZERO;
 
